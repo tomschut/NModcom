@@ -34,7 +34,7 @@ using NUnit.Framework;
 namespace NModcom.Tests
 {
     [TestFixture]
-    public class SimOutput
+    public class SimulationTests
     {
         List<double> t;
         List<double> d;
@@ -46,22 +46,21 @@ namespace NModcom.Tests
         [SetUp]
         public void Setup()
         {
+            t = new List<double>();
+            d = new List<double>();
         }
 
         /// <summary>
         /// The output function should be triggered at the start of the simulation and at 
         /// after each integration step. We check this with a simple exponential growth model
-        /// for which we can easily calculate model state for the first few time steps.
+        /// for which we can easily calculate the model state for the first few time steps.
         /// </summary>
         [Test]
-        public void Test1()
+        public void TestSimulationOutputs()
         {
             const double startTime = 0.0;
             const double stopTime = 5.0;
             const double step = 1.0;
-
-            t = new List<double>();
-            d = new List<double>();
 
             ISimEnv simenv = new SimEnv() { StartTime = startTime, StopTime = stopTime };
             simenv.Integrator.IntegrationTimeStep = step;
@@ -75,49 +74,6 @@ namespace NModcom.Tests
 
             simenv.OutputEvent += Simenv_OutputEvent;
 
-            simenv.Run();
-
-            // check the output times
-            Assert.That(t[0], Is.EqualTo(startTime).Within(delta));
-            Assert.That(t[1], Is.EqualTo(startTime + step * 1).Within(delta));
-            Assert.That(t[2], Is.EqualTo(startTime + step * 2).Within(delta));
-
-            // check the output values
-            Assert.That(d[0], Is.EqualTo(expected_output[0]).Within(delta)); // initial value
-            Assert.That(d[1], Is.EqualTo(expected_output[1]).Within(delta));
-            Assert.That(d[2], Is.EqualTo(expected_output[2]).Within(delta));
-        }
-
-        private void Simenv_OutputEvent(object sender, EventArgs e)
-        {
-            ISimEnv simenv = sender as ISimEnv;
-            double _t = simenv.CurrentTime;
-            double _d = simenv[0].Outputs["density"].Data.AsFloat;
-            t.Add(_t);
-            d.Add(_d);
-            Console.WriteLine("time={0}  density={1}", _t, _d);
-        }
-
-        [Test]
-        public void Test2()
-        {
-            const double startTime = 0.0;
-            const double stopTime = 5.0;
-            const double step = 1.0;
-
-            t = new List<double>();
-            d = new List<double>();
-
-            ISimEnv simenv = new SimEnv() { StartTime = startTime, StopTime = stopTime };
-            simenv.Integrator.IntegrationTimeStep = step;
-
-            ISimObj prey = new PredOrPrey();
-            simenv.Add(prey);
-            prey.Inputs["density"].Data.AsFloat = 1;
-            prey.Inputs["rgr"].Data.AsFloat = 0.1;
-            prey.Inputs["k"].Data.AsFloat = 0; // this will switch off the influence of the other species
-            prey.Inputs["density of other species"].Data.AsFloat = 0;
-
             string fn = "output.csv";
             CSVOutputWriter ow = new CSVOutputWriter(fn);
             ow.AddSimEnv(simenv);
@@ -126,10 +82,15 @@ namespace NModcom.Tests
 
             ow.Close();
 
-            //DataTable table = ow.GetTable();
-            //DataRowCollection rows = table.Rows;
-            //DataRow row = rows[0];
-            //object o = row[0];
+                // check the output times
+            Assert.That(t[0], Is.EqualTo(startTime).Within(delta));
+            Assert.That(t[1], Is.EqualTo(startTime + step * 1).Within(delta));
+            Assert.That(t[2], Is.EqualTo(startTime + step * 2).Within(delta));
+
+            // check the output values from list
+            Assert.That(d[0], Is.EqualTo(expected_output[0]).Within(delta)); // initial value
+            Assert.That(d[1], Is.EqualTo(expected_output[1]).Within(delta));
+            Assert.That(d[2], Is.EqualTo(expected_output[2]).Within(delta));
 
             // open file and read header line
             StreamReader sr = new StreamReader(fn);
@@ -143,16 +104,25 @@ namespace NModcom.Tests
                 line = sr.ReadLine();
                 string[] cols = line.Split(sep);
 
-                // check the output times
+                // check the output times from file
                 double timeVal = Convert.ToDouble(cols[1]);
                 Assert.That(timeVal, Is.EqualTo(startTime + i).Within(delta));
 
-                //// check the output values
+                // check the output values from file
                 double dataVal = Convert.ToDouble(cols[2]);
                 Assert.That(dataVal, Is.EqualTo(expected_output[i]).Within(delta));
             }
             sr.Close();
+}
 
+        private void Simenv_OutputEvent(object sender, EventArgs e)
+        {
+            ISimEnv simenv = sender as ISimEnv;
+            double _t = simenv.CurrentTime;
+            double _d = simenv[0].Outputs["density"].Data.AsFloat;
+            t.Add(_t);
+            d.Add(_d);
+            Console.WriteLine("time={0}  density={1}", _t, _d);
         }
     }
 }

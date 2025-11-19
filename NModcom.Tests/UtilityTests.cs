@@ -35,7 +35,7 @@ using NModcom.Examples;
 namespace NModcom.Tests
 {
     [TestFixture]
-    public class Tests
+    public class UtilityTests
     {
         [SetUp]
         public void Setup()
@@ -47,7 +47,7 @@ namespace NModcom.Tests
         /// to a second file, and compares the two files. The test is failed when the two files have dissimilar content.
         /// </summary>
         [Test]
-        public void TestJson()
+        public void TestJsonSerialization()
         {
             // create a simple simulation
             ISimEnv simenv = CreateSimEnv();
@@ -73,7 +73,7 @@ namespace NModcom.Tests
         /// to a second file, and compares the two files. The test is failed when the two files have dissimilar content.
         /// </summary>
         [Test]
-        public void TestYaml()
+        public void TestYamlSerialization()
         {
             // create a simple simulation
             ISimEnv simenv = CreateSimEnv();
